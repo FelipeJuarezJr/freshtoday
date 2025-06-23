@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../data/providers/sobriety_provider.dart';
+import '../../../data/providers/auth_provider.dart';
 import '../../../core/models/sobriety_tracking_model.dart';
 import '../../../core/models/achievement_model.dart';
 import '../widgets/check_in_dialog.dart';
@@ -20,6 +21,10 @@ class HomeScreen extends StatelessWidget {
             onPressed: () {
               // TODO: Navigate to settings
             },
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () => _showSignOutDialog(context),
           ),
         ],
       ),
@@ -330,6 +335,42 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  void _showSignOutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Sign Out'),
+        content: const Text('Are you sure you want to sign out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              try {
+                await context.read<AuthProvider>().signOut();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Signed out successfully')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error signing out: ${e.toString()}')),
+                  );
+                }
+              }
+            },
+            child: const Text('Sign Out'),
+          ),
+        ],
+      ),
     );
   }
 } 

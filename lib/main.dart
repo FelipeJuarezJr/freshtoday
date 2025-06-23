@@ -10,12 +10,29 @@ import 'data/providers/sobriety_provider.dart';
 import 'data/providers/auth_provider.dart';
 import 'features/home/screens/home_screen.dart';
 import 'features/auth/screens/login_screen.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Firebase
-  await Firebase.initializeApp();
+  // Initialize Firebase with error handling
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    } else {
+      // Get the existing app if it's already initialized
+      Firebase.app();
+    }
+  } catch (e) {
+    // If there's an error, try to get the existing app
+    try {
+      Firebase.app();
+    } catch (e) {
+      print('Firebase initialization error: $e');
+    }
+  }
   
   // Initialize notifications
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -85,9 +102,11 @@ class MyApp extends StatelessWidget {
                 ),
               );
             }
-            return authProvider.isAuthenticated
-                ? const HomeScreen()
-                : const LoginScreen();
+            if (authProvider.isAuthenticated) {
+              return const HomeScreen();
+            } else {
+              return const LoginScreen();
+            }
           },
         ),
       ),

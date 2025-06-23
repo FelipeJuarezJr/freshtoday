@@ -126,6 +126,42 @@ class _LoginScreenState extends State<LoginScreen> {
                       },
                     ),
                   ),
+                  const SizedBox(height: 8),
+                  if (_isLogin)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: authProvider.isLoading
+                            ? null
+                            : () async {
+                                if (_emailController.text.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Please enter your email to reset password'),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                try {
+                                  await context.read<AuthProvider>().resetPassword(_emailController.text.trim());
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Password reset email sent!'),
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text(e.toString())),
+                                    );
+                                  }
+                                }
+                              },
+                        child: const Text('Forgot Password?'),
+                      ),
+                    ),
                   const SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: authProvider.isLoading ? null : _submitForm,
@@ -138,6 +174,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: () {
                       setState(() {
                         _isLogin = !_isLogin;
+                        context.read<AuthProvider>().clearError();
                       });
                     },
                     child: Text(
