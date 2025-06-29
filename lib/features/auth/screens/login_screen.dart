@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../data/providers/auth_provider.dart';
 import '../widgets/auth_text_field.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -28,12 +29,12 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_formKey.currentState!.validate()) {
       try {
         if (_isLogin) {
-          await context.read<AuthProvider>().signInWithEmailAndPassword(
+          await context.read<AppAuthProvider>().signInWithEmailAndPassword(
                 _emailController.text.trim(),
                 _passwordController.text,
               );
         } else {
-          await context.read<AuthProvider>().registerWithEmailAndPassword(
+          await context.read<AppAuthProvider>().registerWithEmailAndPassword(
                 _emailController.text.trim(),
                 _passwordController.text,
                 _emailController.text.split('@')[0], // Use email username as display name
@@ -51,7 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _signInWithGoogle() async {
     try {
-      await context.read<AuthProvider>().signInWithGoogle();
+      await context.read<AppAuthProvider>().signInWithGoogle();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -63,7 +64,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
+    final authProvider = context.watch<AppAuthProvider>();
 
     return Scaffold(
       body: SafeArea(
@@ -143,7 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   return;
                                 }
                                 try {
-                                  await context.read<AuthProvider>().resetPassword(_emailController.text.trim());
+                                  await context.read<AppAuthProvider>().resetPassword(_emailController.text.trim());
                                   if (mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
@@ -174,7 +175,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: () {
                       setState(() {
                         _isLogin = !_isLogin;
-                        context.read<AuthProvider>().clearError();
+                        context.read<AppAuthProvider>().clearError();
                       });
                     },
                     child: Text(
@@ -202,6 +203,40 @@ class _LoginScreenState extends State<LoginScreen> {
                       height: 24,
                     ),
                     label: const Text('Continue with Google'),
+                  ),
+                  const SizedBox(height: 16),
+                  // Debug button for troubleshooting
+                  TextButton(
+                    onPressed: () {
+                      final firebaseUser = FirebaseAuth.instance.currentUser;
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Debug Info'),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('AuthProvider isLoading: ${authProvider.isLoading}'),
+                              Text('AuthProvider isAuthenticated: ${authProvider.isAuthenticated}'),
+                              Text('AuthProvider user: ${authProvider.user?.username ?? 'null'}'),
+                              Text('AuthProvider error: ${authProvider.error ?? 'null'}'),
+                              const SizedBox(height: 8),
+                              Text('Firebase currentUser: ${firebaseUser?.uid ?? 'null'}'),
+                              Text('Firebase email: ${firebaseUser?.email ?? 'null'}'),
+                              Text('Firebase displayName: ${firebaseUser?.displayName ?? 'null'}'),
+                            ],
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Close'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    child: const Text('🔍 Debug Info'),
                   ),
                   if (!_isLogin) ...[
                     const SizedBox(height: 16),

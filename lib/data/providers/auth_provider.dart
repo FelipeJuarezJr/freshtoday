@@ -3,13 +3,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/models/user_model.dart';
 
-class AuthProvider with ChangeNotifier {
+class AppAuthProvider with ChangeNotifier {
   final AuthService _authService;
   UserModel? _user;
   bool _isLoading = false;
   String? _error;
 
-  AuthProvider(this._authService) {
+  AppAuthProvider(this._authService) {
     _init();
   }
 
@@ -19,28 +19,62 @@ class AuthProvider with ChangeNotifier {
   bool get isAuthenticated => _user != null;
 
   void _init() {
-    _authService.authStateChanges.listen((User? firebaseUser) {
-      if (firebaseUser != null) {
-        _user = _authService.getCurrentUserModel();
-      } else {
-        _user = null;
-      }
+    try {
+      print('AuthProvider: Initializing auth state listener...');
+      _authService.authStateChanges.listen(
+        (User? firebaseUser) {
+          try {
+            print('AuthProvider: Auth state changed, user: ${firebaseUser?.uid ?? 'null'}');
+            print('AuthProvider: Previous user: ${_user?.username ?? 'null'}');
+            if (firebaseUser != null) {
+              _user = _authService.getCurrentUserModel();
+              print('AuthProvider: User model created: ${_user?.username}');
+              print('AuthProvider: isAuthenticated will be: true');
+            } else {
+              _user = null;
+              print('AuthProvider: User set to null');
+              print('AuthProvider: isAuthenticated will be: false');
+            }
+            print('AuthProvider: Notifying listeners...');
+            notifyListeners();
+            print('AuthProvider: Listeners notified');
+          } catch (e) {
+            print('AuthProvider: Error in auth state listener: $e');
+            _user = null;
+            notifyListeners();
+          }
+        },
+        onError: (error) {
+          print('AuthProvider: Error in auth state stream: $error');
+          _user = null;
+          notifyListeners();
+        },
+      );
+      print('AuthProvider: Auth state listener initialized successfully');
+    } catch (e) {
+      print('AuthProvider: Error initializing auth state listener: $e');
+      _user = null;
       notifyListeners();
-    });
+    }
   }
 
   Future<void> signInWithEmailAndPassword(String email, String password) async {
     try {
+      print('AuthProvider: Starting email/password sign in...');
       _isLoading = true;
       _error = null;
       notifyListeners();
 
       await _authService.signInWithEmailAndPassword(email, password);
-      _user = _authService.getCurrentUserModel();
+      print('AuthProvider: Email/password sign in completed successfully');
+      // Remove manual user setting - let the auth state listener handle it
+      // _user = _authService.getCurrentUserModel();
 
       _isLoading = false;
       notifyListeners();
+      print('AuthProvider: Email/password sign in - loading set to false');
     } catch (e) {
+      print('AuthProvider: Email/password sign in failed: $e');
       _isLoading = false;
       _error = e.toString();
       notifyListeners();
@@ -56,7 +90,6 @@ class AuthProvider with ChangeNotifier {
       notifyListeners();
 
       await _authService.registerWithEmailAndPassword(email, password, username);
-      _user = _authService.getCurrentUserModel();
 
       _isLoading = false;
       notifyListeners();
@@ -75,7 +108,6 @@ class AuthProvider with ChangeNotifier {
       notifyListeners();
 
       await _authService.signInWithGoogle();
-      _user = _authService.getCurrentUserModel();
 
       _isLoading = false;
       notifyListeners();

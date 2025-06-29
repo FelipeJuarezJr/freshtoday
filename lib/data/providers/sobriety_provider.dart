@@ -40,18 +40,19 @@ class SobrietyProvider with ChangeNotifier {
   Future<void> startJourney() async {
     try {
       _isLoading = true;
+      _error = null;
       notifyListeners();
 
       await _sobrietyService.startSobrietyJourney();
       await _initialize();
 
       _isLoading = false;
-      _error = null;
+      notifyListeners();
     } catch (e) {
       _isLoading = false;
       _error = e.toString();
-    } finally {
       notifyListeners();
+      rethrow;
     }
   }
 
@@ -76,5 +77,20 @@ class SobrietyProvider with ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  // Auto-start journey if not started
+  Future<void> _ensureJourneyStarted() async {
+    try {
+      await _initialize();
+    } catch (e) {
+      // If journey hasn't started, start it automatically
+      if (e.toString().contains('has not started')) {
+        print('SobrietyProvider: Auto-starting journey...');
+        await startJourney();
+      } else {
+        rethrow;
+      }
+    }
   }
 } 

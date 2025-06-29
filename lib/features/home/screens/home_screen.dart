@@ -338,39 +338,27 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  void _showSignOutDialog(BuildContext context) {
-    showDialog(
+  Future<void> _showSignOutDialog(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Sign Out'),
         content: const Text('Are you sure you want to sign out?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(context).pop(false),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              try {
-                await context.read<AuthProvider>().signOut();
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Signed out successfully')),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error signing out: ${e.toString()}')),
-                  );
-                }
-              }
-            },
+            onPressed: () => Navigator.of(context).pop(true),
             child: const Text('Sign Out'),
           ),
         ],
       ),
     );
+
+    if (confirmed == true && context.mounted) {
+      await context.read<AppAuthProvider>().signOut();
+    }
   }
 } 
